@@ -1,0 +1,126 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "parameterValues": {
+    "byolOrHourly": {
+      "type": "string",
+      "defaultValue": "hourly",
+      "allowedValues": [ "hourly", "byol" ],
+      "metadata": {
+        "description": "The number of Web Application Firewalls that will be deployed in front of your application."
+      }
+    },
+    "numberOfInstances": {
+      "type": "int",
+      "defaultValue": 1,
+      "allowedValues": [ 1, 2 ],
+      "metadata": {
+        "description": "The number of Web Application Firewalls that will be deployed in front of your application."
+      }
+    },
+    "instanceType": {
+      "allowedValues": [
+        "Standard_A2",
+        "Standard_A3",
+        "Standard_A4",
+        "Standard_A5",
+        "Standard_A6",
+        "Standard_A7",
+        "Standard_A8",
+        "Standard_A9",
+        "Standard_D2",
+        "Standard_D3",
+        "Standard_D4",
+        "Standard_D11",
+        "Standard_D12",
+        "Standard_D13",
+        "Standard_D14",
+        "Standard_D2_v2",
+        "Standard_D3_v2",
+        "Standard_D4_v2",
+        "Standard_D5_v2",
+        "Standard_D11_v2",
+        "Standard_D12_v2",
+        "Standard_D13_v2",
+        "Standard_D14_v2",
+        "Standard_D15_v2",
+        "Standard_F2",
+        "Standard_F4",
+        "Standard_F8"
+      ],
+      "defaultValue": "Standard_D2_v2",
+      "metadata": {
+        "description": "Size of the VM"
+      },
+      "type": "string"
+    },
+    "imageName": {
+      "allowedValues": [
+        "Good",
+        "Better",
+        "Best"
+      ],
+      "defaultValue": "Good",
+      "metadata": {
+        "description": "F5 SKU(IMAGE) to Deploy, only relevantfor BYOL"
+      },
+      "type": "string"
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "azureuser",
+      "metadata": {
+        "description": "User name to login to the Web Application Firewall."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password to login to the Web Application Firewall."
+      }
+    },
+    "publicIpName": {
+      "type": "string",
+      "defaultValue": "ip01",
+      "metadata": {
+        "description": "Unique name for the Public IP used to access the Web Application Firewalls for management."
+      }
+    },
+    "licenseKey1": {
+      "type": "string",
+      "defaultValue": "NOT_SPECIFIED",
+      "metadata": {
+        "description": "The license token for the first F5 BYOL instance, (if applicable)."
+      }
+    },
+    "licenseKey2": {
+      "type": "string",
+      "defaultValue": "NOT_SPECIFIED",
+      "metadata": {
+        "description": "The license token for the second F5 BYOL instance, (if applicable)."
+      }
+    },
+    "numCopies": {
+      "type": "int",
+      "defaultValue": 2,
+      "allowedValues": [
+        1,
+        2,
+        10,
+        25,
+        50
+      ],
+      "maxValue": 50,
+      "minValue": 1,
+      "metadata": {
+        "description": "The number of VS/WAF copies to deploy for purposes of load testing, Selection limited to 1, 2, 10, 25, or 50 instances."
+      }
+    },
+    "restrictedSrcAddress": {
+      "type": "string",
+      "defaultValue": "*",
+      "metadata": {
+        "description": "Restricts management access to a specific network or address. Enter a IP address or address range in CIDR notation, or asterisk for all sources."
+      }
+    }
+  }
+}

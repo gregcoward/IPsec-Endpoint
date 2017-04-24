@@ -1,0 +1,520 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "byolOrHourly": {
+      "type": "string",
+      "defaultValue": "hourly",
+      "allowedValues": [ "hourly", "byol" ],
+      "metadata": {
+        "description": "The number of Web Application Firewalls that will be deployed in front of your application."
+      }
+    },
+    "instanceType": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_A4",
+        "Standard_A5",
+        "Standard_A6",
+        "Standard_A7",
+        "Standard_A8",
+        "Standard_A9",
+        "Standard_D3",
+        "Standard_D4",
+        "Standard_D11",
+        "Standard_D12",
+        "Standard_D13",
+        "Standard_D14",
+        "Standard_D3_v2",
+        "Standard_D4_v2",
+        "Standard_D5_v2",
+        "Standard_D11_v2",
+        "Standard_D12_v2",
+        "Standard_D13_v2",
+        "Standard_D14_v2",
+        "Standard_D15_v2",
+        "Standard_F4",
+        "Standard_F8"
+      ],
+      "defaultValue": "Standard_D3_v2",
+      "metadata": {
+        "description": "Size of the VM"
+      }
+    },
+    "imageName": {
+      "allowedValues": [
+        "good",
+        "better",
+        "best"
+      ],
+      "defaultValue": "good",
+      "metadata": {
+        "description": "F5 SKU(IMAGE) to Deploy, only relevant for hourly billing."
+      },
+      "type": "string"
+    },
+    "licensedBandwidth": {
+      "type": "string",
+      "defaultValue": "200m",
+      "metadata": {
+        "description": "The VM image to use for this deployment, only relevant for hourly billing."
+      },
+      "allowedValues": [
+        "1g",
+        "25m",
+        "200m"
+      ]
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "azureuser",
+      "metadata": {
+        "description": "User name to login to the Web Application Firewall."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password to login to the Web Application Firewall."
+      }
+    },
+    "publicIpName": {
+      "type": "string",
+      "defaultValue": "ip01",
+      "metadata": {
+        "description": "Unique name for the Public IP used to access the Web Application Firewalls for management."
+      }
+    },
+    "licenseKey1": {
+      "type": "string",
+      "defaultValue": "NOT_SPECIFIED",
+      "metadata": {
+        "description": "The license token for the first F5 BYOL instance, (if applicable)."
+      }
+    },
+    "licenseKey2": {
+      "type": "string",
+      "defaultValue": "NOT_SPECIFIED",
+      "metadata": {
+        "description": "The license token for the second F5 BYOL instance, (if applicable)."
+      }
+    },
+    "numCopies": {
+      "type": "int",
+      "defaultValue": 10,
+      "allowedValues": [
+        10,
+        25,
+        50
+      ],
+      "maxValue": 50,
+      "minValue": 10,
+      "metadata": {
+        "description": "The number of VS/WAF copies to deploy for purposes of load testing, Selection limited to 1, 2, 10, 25, or 50 instances."
+      }
+    },
+    "restrictedSrcAddress": {
+      "type": "string",
+      "defaultValue": "*",
+      "metadata": {
+        "description": "Restricts management access to a specific network or address. Enter a IP address or address range in CIDR notation, or asterisk for all sources."
+      }
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "bigIpVersion": "latest",
+    "baseUrl": "https://raw.githubusercontent.com/gregcoward/SingleInstance-MassiveVIPs/master",
+    "newStorageAccountName": "[concat(uniquestring(concat(resourceGroup().id, 'st')), 'st')]",
+    "diagStorageAccountName": "[concat(uniquestring(concat(resourceGroup().id, 'diag')), 'diag')]",
+    "f5NamePrefix": "[concat(parameters('publicIpName'),'-bigip')]",
+    "apiVersionCompute": "2016-03-30",
+    "apiVersionNetwork": "2015-06-15",
+    "apiVersionStorage": "2015-06-15",
+    "apiVersionTemplate": "2015-01-01",
+    "pubIpTemplateLink": "[concat(variables('baseUrl'), '/publicips.json')]",
+    "loadBalTemplateLink": "[concat(variables('baseUrl'), '/loadBals.json')]",
+    "bigipTemplateLink": "[concat(variables('baseUrl'), '/bigip-', parameters('byolOrHourly'), parameters('numCopies'), 'vip.json')]",
+    "virtualNetworkName": "VNet",
+    "vnetAddressPrefix": "10.10.0.0/16",
+    "mgmtSubnetName": "mgmt",
+    "mgmtSubnetPrefix": "10.10.1.0/24",
+    "mgmtIpAddress": "10.10.1.",
+    "mgmtsubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('mgmtSubnetName'))]",
+    "intSubnetName": "internal",
+    "intSubnetPrefix": "10.10.2.0/24",
+    "intIpAddress": "10.10.2.",
+    "intsubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('intSubnetName'))]",
+    "extSubnetName": "external",
+    "extSubnetPrefix": "10.10.3.0/24",
+    "extIpAddress": "10.10.3.",
+    "extsubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('extSubnetName'))]",
+    "nicNamePrefix": "[concat(parameters('publicIpName'),'-nic')]",
+    "availabilitySetName": "[concat(parameters('publicIpName'),'-as')]",
+    "nsgID": "[resourceId('Microsoft.Network/networkSecurityGroups/',concat(parameters('publicIpName'),'-nsg'))]",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+    "instanceTypeMap": {
+      "Standard_A3": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_A4": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_A5": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_A6": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_A7": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D3": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D4": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D11": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D12": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D13": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D14": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D2_v2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D3_v2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D4_v2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D5_v2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D11_v2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D12_v2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D13_v2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_D14_v2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_F4": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_G1": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_G2": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_G3": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_G4": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_G5": {
+        "storageAccountType": "Standard_LRS"
+      },
+      "Standard_DS1": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS3": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS4": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS11": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS12": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS13": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS14": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS1_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS2_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS3_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS4_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS5_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS11_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS12_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS13_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS14_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_DS15_v2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_GS1": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_GS2": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_GS3": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_GS4": {
+        "storageAccountType": "Premium_LRS"
+      },
+      "Standard_GS5": {
+        "storageAccountType": "Premium_LRS"
+      }
+    }
+  },
+  "resources": [
+    {
+      "name": "[variables('diagStorageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "StorageAccount"
+      },
+      "apiVersion": "[variables('apiVersionStorage')]",
+      "properties": {
+        "accountType": "[variables('instanceTypeMap')[parameters('instanceType')].storageAccountType]"
+      }
+    },
+    {
+      "name": "[variables('newStorageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "StorageAccount"
+      },
+      "apiVersion": "[variables('apiVersionStorage')]",
+      "properties": {
+        "accountType": "[variables('instanceTypeMap')[parameters('instanceType')].storageAccountType]"
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersionNetwork')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "VirtualNetwork"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnetAddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('mgmtSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('mgmtSubnetPrefix')]"
+            }
+          },
+          {
+            "name": "[variables('intSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('intSubnetPrefix')]"
+            }
+          },
+          {
+            "name": "[variables('extSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('extSubnetPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersionCompute')]",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "AvailabilitySet"
+      },
+      "name": "[variables('availabilitySetName')]",
+      "type": "Microsoft.Compute/availabilitySets"
+    },
+    {
+      "apiVersion": "[variables('apiVersionNetwork')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[concat(parameters('publicIpName'), '-nsg')]",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "NetworkSecurityGroup"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "mgmt_allow_8443",
+            "properties": {
+              "description": "",
+              "priority": 101,
+              "sourceAddressPrefix": "[parameters('restrictedSrcAddress')]",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "8443",
+              "protocol": "TCP",
+              "direction": "Inbound",
+              "access": "Allow"
+            }
+          },
+          {
+            "name": "ssh_allow_22",
+            "properties": {
+              "description": "",
+              "priority": 102,
+              "sourceAddressPrefix": "[parameters('restrictedSrcAddress')]",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "22",
+              "protocol": "TCP",
+              "direction": "Inbound",
+              "access": "Allow"
+            }
+          },
+          {
+            "name": "app_allow_80",
+            "properties": {
+              "description": "",
+              "priority": 103,
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "80",
+              "protocol": "TCP",
+              "direction": "Inbound",
+              "access": "Allow"
+            }
+          },
+          {
+            "name": "app_allow_443",
+            "properties": {
+              "description": "",
+              "priority": 104,
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "443",
+              "protocol": "TCP",
+              "direction": "Inbound",
+              "access": "Allow"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersionTemplate')]",
+      "name": "publicIpLinkedTemplate",
+      "type": "Microsoft.Resources/deployments",
+      "dependsOn": [
+      ],
+      "properties": {
+        "mode": "incremental",
+        "templateLink": {
+          "uri": "[variables('pubIpTemplateLink')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apiVersionCompute": { "value": "[variables('apiVersionCompute')]" },
+          "apiVersionNetwork": { "value": "[variables('apiVersionNetwork')]" },
+          "apiVersionStorage": { "value": "[variables('apiVersionStorage')]" },
+          "numCopies": { "value": "[parameters('numCopies')]" },
+          "location": { "value": "[variables('location')]" },
+          "publicIPName": { "value": "[parameters('publicIPName')]" }
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersionTemplate')]",
+      "name": "linkedTemplate",
+      "type": "Microsoft.Resources/deployments",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]",
+        "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+        "[concat('Microsoft.Storage/storageAccounts/', variables('diagStorageAccountName'))]",
+        "publicIpLinkedTemplate"
+      ],
+      "properties": {
+        "mode": "incremental",
+        "templateLink": {
+          "uri": "[variables('bigipTemplateLink')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "f5NamePrefix": { "value": "[variables('f5NamePrefix')]" },
+          "mgmtIpAddress": { "value": "[variables('mgmtIpAddress')]" },
+          "mgmtSubnetRef": { "value": "[variables('mgmtSubnetRef')]" },
+          "intIpAddress": { "value": "[variables('intIpAddress')]" },
+          "intSubnetRef": { "value": "[variables('intSubnetRef')]" },
+          "extIpAddress": { "value": "[variables('extIpAddress')]" },
+          "extSubnetRef": { "value": "[variables('extSubnetRef')]" },
+          "nicNamePrefix": { "value": "[variables('nicNamePrefix')]" },
+          "nsgID": { "value": "[variables('nsgID')]" },
+          "apiVersionCompute": { "value": "[variables('apiVersionCompute')]" },
+          "apiVersionNetwork": { "value": "[variables('apiVersionNetwork')]" },
+          "apiVersionStorage": { "value": "[variables('apiVersionStorage')]" },
+          "numCopies": { "value": "[parameters('numCopies')]" },
+          "baseUrl": { "value": "[variables('baseUrl')]" },
+          "location": { "value": "[variables('location')]" },
+          "licenseKey1": { "value": "[parameters('licenseKey1')]" },
+          "licenseKey2": { "value": "[parameters('licenseKey2')]" },
+          "instanceType": { "value": "[parameters('instanceType')]" },
+          "adminUsername": { "value": "[parameters('adminUsername')]" },
+          "adminPassword": { "value": "[parameters('adminPassword')]" },
+          "publicIPName": { "value": "[parameters('publicIPName')]" },
+          "virtualNetworkName": { "value": "[variables('virtualNetworkName')]" },
+          "availabilitySetName": { "value": "[variables('availabilitySetName')]" },
+          "newStorageAccountName": { "value": "[variables('newStorageAccountName')]" },
+          "diagStorageAccountName": { "value": "[variables('diagStorageAccountName')]" },
+          "imageName": { "value": "[parameters('imageName')]" },
+          "licensedBandwidth": { "value": "[parameters('licensedBandwidth')]" }
+        }
+      }
+    }
+  ],
+    "outputs": {}
+  }
