@@ -135,7 +135,7 @@
     {
       "apiVersion": "[parameters('apiVersionNetwork')]",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[parameters('nicNamePrefix'))]",
+      "name": "[parameters('nicNamePrefix')]",
       "location": "[parameters('location')]",
       "tags": {
         "displayName": "NetworkInterface"
