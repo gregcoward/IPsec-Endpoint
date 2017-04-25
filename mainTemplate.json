@@ -628,7 +628,7 @@
           "scriptLoc": { "value": "[variables('scriptLoc')]" },
           "imageName": { "value": "[parameters('imageName')]" },
           "licensedBandwidth": { "value": "[parameters('licensedBandwidth')]" },
-          "publicIpId": { "value": "variables('publicIpId')]" }
+          "publicIpId": { "value": "[variables('publicIpId')]" }
           
         }
       }
