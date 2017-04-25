@@ -110,12 +110,6 @@
         "description": "a single quote"
       }
     },
-    "domainFqdn": {
-      "type": "string",
-      "metadata": {
-        "description": "Federation Domaain Name"
-      }
-    },
     "commandArgs": {
       "type": "string",
       "metadata": {
