@@ -133,12 +133,18 @@
       "metadata": {
         "description": "F5 image to deploy"
       }
+    },
+    "publicIpId": {
+      "type": "string",
+      "metadata": {
+        "description": "public IP reference"
+      }
     }
   },
   "variables": {
     "imageNameToLower": "[toLower(parameters('imageName'))]",
     "skuToUse": "[concat('f5-bigip-virtual-edition-', parameters('licensedBandwidth'), '-', variables('imageNameToLower'),'-hourly')]"
-   },
+  },
   "resources": [
     {
       "apiVersion": "[parameters('apiVersionNetwork')]",
@@ -152,7 +158,7 @@
       ],
       "properties": {
         "networkSecurityGroup": {
-           "id": "[parameters('nsgID')]"
+          "id": "[parameters('nsgID')]"
         },
         "ipConfigurations": [
           {
@@ -160,6 +166,9 @@
             "enableIPForwarding": true,
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[parameters('publicIpId')]"
+              },
               "subnet": {
                 "id": "[parameters('subnetId')]"
               }
@@ -188,11 +197,11 @@
         "hardwareProfile": {
           "vmSize": "[parameters('instanceType')]"
         },
-       "osProfile": {
+        "osProfile": {
           "computerName": "[parameters('bigipNamePrefix')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
-                    },
+        },
         "storageProfile": {
           "imageReference": {
             "publisher": "f5-networks",
@@ -246,7 +255,7 @@
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('cp f5-cloud-libs.tar.gz* /config; /usr/bin/install -b -m 755 /dev/null /config/verifyHash; /usr/bin/install -b -m 755 /dev/null /config/installCloudLibs.sh; /usr/bin/install -b -m 400 /dev/null /config/mypass; IFS=', parameters('singleQuote'), '%', parameters('singleQuote'), '; echo -e ', parameters('verifyHash'), ' >> /config/verifyHash; echo -e ', parameters('installCloudLibs'), ' >> /config/installCloudLibs.sh; echo -e ', parameters('adminPassword'), ' >> /config/mypass; unset IFS; bash /config/installCloudLibs.sh; /usr/bin/f5-rest-node /config/f5-cloud-libs/scripts/azure/runScripts.js --log-level debug --onboard \" --output /var/log/onboard.log --log-level debug --host ', reference(parameters('nicNamePrefix')).ipConfigurations[0].properties.privateIpAddress, ' -u admin --password-url file:///config/mypass --hostname ', concat(parameters('bigipNamePrefix'),'.', parameters('location')),'.cloudapp.azure.com',  ' --ntp pool.ntp.org --db provision.1nicautoconfig:disable --db tmm.maxremoteloglength:2048 --module ltm:nominal --module asm:nominal --module afm:none --module apm:nominal --signal ONBOARD_DONE \" --script \" --wait-for ONBOARD_DONE --output /var/log/runScript.log --log-level debug --file /var/lib/waagent/custom-script/download/0/IPsecEndptDeploy.sh --cl-args ', parameters('singleQuote'),'-k ', reference(parameters('nicNamePrefix')).ipConfigurations[0].properties.privateIpAddress, parameters('commandArgs'), parameters('singleQuote'), ' --signal SCRIPT_DONE \"')]"
+          "commandToExecute": "[concat('cp f5-cloud-libs.tar.gz* /config; /usr/bin/install -b -m 755 /dev/null /config/verifyHash; /usr/bin/install -b -m 755 /dev/null /config/installCloudLibs.sh; /usr/bin/install -b -m 400 /dev/null /config/mypass; IFS=', parameters('singleQuote'), '%', parameters('singleQuote'), '; echo -e ', parameters('verifyHash'), ' >> /config/verifyHash; echo -e ', parameters('installCloudLibs'), ' >> /config/installCloudLibs.sh; echo -e ', parameters('adminPassword'), ' >> /config/mypass; unset IFS; bash /config/installCloudLibs.sh; /usr/bin/f5-rest-node /config/f5-cloud-libs/scripts/azure/runScripts.js --log-level debug --onboard \" --output /var/log/onboard.log --log-level debug --host ', reference(parameters('nicNamePrefix')).ipConfigurations[0].properties.privateIpAddress, ' --ssl-port 8443 -u admin --password-url file:///config/mypass --hostname ', concat(parameters('bigipNamePrefix'),'.', parameters('location')),'.cloudapp.azure.com',  ' --ntp pool.ntp.org --db provision.1nicautoconfig:disable --db tmm.maxremoteloglength:2048 --module ltm:nominal --module asm:nominal --module afm:none --module apm:nominal --signal ONBOARD_DONE \" --script \" --wait-for ONBOARD_DONE --output /var/log/runScript.log --log-level debug --file /var/lib/waagent/custom-script/download/0/IPsecEndptDeploy.sh --cl-args ', parameters('singleQuote'),'-k ', reference(parameters('nicNamePrefix')).ipConfigurations[0].properties.privateIpAddress, parameters('commandArgs'), parameters('singleQuote'), ' --signal SCRIPT_DONE \"')]"
         }
       }
     }

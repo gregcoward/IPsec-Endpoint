@@ -457,7 +457,7 @@
     "installCloudLibs": "[concat(variables('singleQuote'), '#!/bin/bash\necho about to execute\nchecks=0\nwhile [ $checks -lt 120 ]; do echo checking mcpd\n/usr/bin/tmsh -a show sys mcp-state field-fmt | grep -q running\nif [ $? == 0 ]; then\necho mcpd ready\nbreak\nfi\necho mcpd not ready yet\nlet checks=checks+1\nsleep 1\ndone\necho loading verifyHash script\n/usr/bin/tmsh load sys config merge file /config/verifyHash\nif [ $? != 0 ]; then\necho cannot validate signature of /config/verifyHash\nexit\nfi\necho loaded verifyHash\necho verifying f5-cloud-libs.targ.gz\n/usr/bin/tmsh run cli script verifyHash /config/f5-cloud-libs.tar.gz\nif [ $? != 0 ]; then\necho f5-cloud-libs.tar.gz is not valid\nexit\nfi\necho verified f5-cloud-libs.tar.gz\necho expanding f5-cloud-libs.tar.gz\ntar xvfz /config/f5-cloud-libs.tar.gz -C /config\ntouch /config/cloudLibsReady', variables('singleQuote'))]",
     "f5CloudLibsTag": "v2.1.0",
     "f5CloudLibsTagUrl": "[concat(variables('baseUrl'),'/f5-cloud-libs/', variables('f5CloudLibsTag'), '/dist/f5-cloud-libs.tar.gz')]",
-    "commandArgs": "[concat(' -i ',parameters('tunnelType'),' -p ', parameters('remoteEndPt'),' -s ', parameters('presharedKey'),' -e ', parameters('authStrength1'),' -c ', parameters('encryptStrength1'),' -f ', parameters('authStrength2'),' -y ', parameters('encryptStrength2'),' -o ', parameters('destNet'),' -u ', parameters('destMask'),' -t ', parameters('intTunnelAddr'),' -d ', parameters('intTunnelMask'),' -x ', variables('subnetMask')[variables('subPart')].mask"
+    "commandArgs": "[concat(' -i ',parameters('tunnelType'),' -p ', parameters('remoteEndPt'),' -s ', parameters('presharedKey'),' -e ', parameters('authStrength1'),' -c ', parameters('encryptStrength1'),' -f ', parameters('authStrength2'),' -y ', parameters('encryptStrength2'),' -o ', parameters('destNet'),' -u ', parameters('destMask'),' -t ', parameters('intTunnelAddr'),' -d ', parameters('intTunnelMask'),' -x ', '255.255.255.0')]"
 
   },
   "resources": [
@@ -627,7 +627,8 @@
           "commandArgs": { "value": "[variables('commandArgs')]" },
           "scriptLoc": { "value": "[variables('scriptLoc')]" },
           "imageName": { "value": "[parameters('imageName')]" },
-          "licensedBandwidth": { "value": "[parameters('licensedBandwidth')]" }
+          "licensedBandwidth": { "value": "[parameters('licensedBandwidth')]" },
+          "publicIpId": { "value": "variables('publicIpId')]" }
           
         }
       }
