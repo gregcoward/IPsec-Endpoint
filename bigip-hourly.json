@@ -163,10 +163,10 @@
     {
       "apiVersion": "[parameters('apiVersionCompute')]",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[parameters('bigipNamePrefix'))]",
+      "name": "[parameters('bigipNamePrefix')]",
       "location": "[parameters('location')]",
       "tags": {
-        "displayName": "[parameters('bigipNamePrefix'))]"
+        "displayName": "[parameters('bigipNamePrefix')]"
       },
       "dependsOn": [
         "[concat('Microsoft.Network/networkInterfaces/',parameters('nicNamePrefix'))]"
