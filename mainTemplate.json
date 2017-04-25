@@ -626,7 +626,8 @@
           "singleQuote": { "value": "[variables('singleQuote')]" },
           "commandArgs": { "value": "[variables('commandArgs')]" },
           "scriptLoc": { "value": "[variables('scriptLoc')]" },
-          "imageName": { "value": "[parameters('imageName')]" }
+          "imageName": { "value": "[parameters('imageName')]" },
+          "licensedBandwidth": { "value": "[parameters('licensedBandwidth')]" }
           
         }
       }

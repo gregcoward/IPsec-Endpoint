@@ -127,10 +127,18 @@
       "metadata": {
         "description": "F5 image to deploy"
       }
+    },
+    "licensedBandwidth": {
+      "type": "string",
+      "metadata": {
+        "description": "F5 image to deploy"
+      }
     }
   },
   "variables": {
-  },
+    "imageNameToLower": "[toLower(parameters('imageName'))]",
+    "skuToUse": "[concat('f5-bigip-virtual-edition-', parameters('licensedBandwidth'), '-', variables('imageNameToLower'),'-hourly')]"
+   },
   "resources": [
     {
       "apiVersion": "[parameters('apiVersionNetwork')]",
@@ -172,7 +180,7 @@
         "[concat('Microsoft.Network/networkInterfaces/',parameters('nicNamePrefix'))]"
       ],
       "plan": {
-        "name": "[parameters('imageName')]",
+        "name": "[variables('skuToUse')]",
         "publisher": "f5-networks",
         "product": "f5-big-ip-hourly"
       },
@@ -189,7 +197,7 @@
           "imageReference": {
             "publisher": "f5-networks",
             "offer": "f5-big-ip-hourly",
-            "sku": "[parameters('imageName')]",
+            "sku": "[variables('skuToUse')]",
             "version": "latest"
           },
           "osDisk": {
