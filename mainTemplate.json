@@ -449,7 +449,7 @@
         "storageAccountType": "Premium_LRS"
       }
     },
-    "iappUrl": "[concat(variables('baseUrl'), '/F5-IPsec-Endpoint.tmpl')]",
+    "iappUrl": "[concat(variables('baseUrl'), '/f5.ipsec.endpoint.tmpl')]",
     "runScriptsUrl": "[concat(variables('baseUrl'), '/runScripts.js')]",
     "scriptName": "IPsecEndptDeploy.sh",
     "scriptLoc": "[concat(variables('baseUrl'), '/', variables('scriptName'))]",
