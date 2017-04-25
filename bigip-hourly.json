@@ -1,0 +1,255 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apiVersionCompute": {
+      "type": "string",
+      "metadata": {
+        "description": "The compute api version"
+      }
+    },
+    "apiVersionNetwork": {
+      "type": "string",
+      "metadata": {
+        "description": "The network api version"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The Azure location hosting the resource"
+      }
+    },
+    "subnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "The subnet Id"
+      }
+    },
+    "bigipNamePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "The bigip name prefix"
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The admin account username"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The admin account passowrd"
+      }
+    },
+    "instanceType": {
+      "type": "string",
+      "metadata": {
+        "description": "The bigip instance size"
+      }
+    },
+    "nsgId": {
+      "type": "string",
+      "metadata": {
+        "description": "The NSG Id"
+      }
+    },
+    "nicNamePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "The network interface id"
+      }
+    },
+    "newStorageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "vhd storage file"
+      }
+    },
+    "runScriptsUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "URL for nested templates"
+      }
+    },
+    "iAppUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "URL for iApp templates"
+      }
+    },
+    "f5CloudLibsTagUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Cloudlibs Url Tage"
+      }
+    },
+    "f5CloudLibsTag": {
+      "type": "string",
+      "metadata": {
+        "description": "Tag for F5 CloudLibs "
+      }
+    },
+    "installCloudLibs": {
+      "type": "string",
+      "metadata": {
+        "description": "Cloudlibs install command "
+      }
+    },
+    "verifyHash": {
+      "type": "string",
+      "metadata": {
+        "description": "Cloudlibs file hash"
+      }
+    },
+    "singleQuote": {
+      "type": "string",
+      "metadata": {
+        "description": "a single quote"
+      }
+    },
+    "domainFqdn": {
+      "type": "string",
+      "metadata": {
+        "description": "Federation Domaain Name"
+      }
+    },
+    "commandArgs": {
+      "type": "string",
+      "metadata": {
+        "description": "IApp Deployment script command argurments string"
+      }
+    },
+    "scriptLoc": {
+      "type": "string",
+      "metadata": {
+        "description": "URL location for run script"
+      }
+    },
+    "imageName": {
+      "type": "string",
+      "metadata": {
+        "description": "F5 image to deploy"
+      }
+    }
+  },
+  "variables": {
+  },
+  "resources": [
+    {
+      "apiVersion": "[parameters('apiVersionNetwork')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[parameters('nicNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "NetworkInterface"
+      },
+      "dependsOn": [
+      ],
+      "properties": {
+        "networkSecurityGroup": {
+           "id": "[parameters('nsgID')]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "enableIPForwarding": true,
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[parameters('subnetId')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[parameters('apiVersionCompute')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('bigipNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "[parameters('bigipNamePrefix'))]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/',parameters('nicNamePrefix'))]"
+      ],
+      "plan": {
+        "name": "[parameters('imageName')]",
+        "publisher": "f5-networks",
+        "product": "f5-big-ip-hourly"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('instanceType')]"
+        },
+       "osProfile": {
+          "computerName": "[parameters('bigipNamePrefix')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+                    },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "f5-networks",
+            "offer": "f5-big-ip-hourly",
+            "sku": "[parameters('imageName')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat('osdisk',parameters('bigipNamePrefix'))]",
+            "vhd": {
+              "uri": "[concat('http://',parameters('newStorageAccountName'),'.blob.core.windows.net/',parameters('newStorageAccountName'),'/osDisk','.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(parameters('nicNamePrefix')))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('http://',parameters('newstorageAccountName'),'.blob.core.windows.net')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('bigipNamePrefix'),'1','/start')]",
+      "apiVersion": "[parameters('apiVersionCompute')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', concat(parameters('bigipNamePrefix'),'1'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "autoUpgradeMinorVersion": true,
+        "typeHandlerVersion": "2.0",
+        "settings": {
+          "fileUris": [
+            "[parameters('runScriptsUrl')]",
+            "[parameters('f5CloudLibsTagUrl')]",
+            "[parameters('iappUrl')]",
+            "[parameters('scriptLoc')]"
+          ]
+        },
+        "protectedSettings": {
+          "commandToExecute": "[concat('cp f5-cloud-libs.tar.gz* /config; /usr/bin/install -b -m 755 /dev/null /config/verifyHash; /usr/bin/install -b -m 755 /dev/null /config/installCloudLibs.sh; /usr/bin/install -b -m 400 /dev/null /config/mypass; IFS=', parameters('singleQuote'), '%', parameters('singleQuote'), '; echo -e ', parameters('verifyHash'), ' >> /config/verifyHash; echo -e ', parameters('installCloudLibs'), ' >> /config/installCloudLibs.sh; echo -e ', parameters('adminPassword'), ' >> /config/mypass; unset IFS; bash /config/installCloudLibs.sh; /usr/bin/f5-rest-node /config/f5-cloud-libs/scripts/azure/runScripts.js --log-level debug --onboard \" --output /var/log/onboard.log --log-level debug --host ', reference(parameters('nicNamePrefix')).ipConfigurations[0].properties.privateIpAddress, ' -u admin --password-url file:///config/mypass --hostname ', concat(parameters('bigipNamePrefix'),'.', parameters('location')),'.cloudapp.azure.com',  ' --ntp pool.ntp.org --db provision.1nicautoconfig:disable --db tmm.maxremoteloglength:2048 --module ltm:nominal --module asm:nominal --module afm:none --module apm:nominal --signal ONBOARD_DONE \" --script \" --wait-for ONBOARD_DONE --output /var/log/runScript.log --log-level debug --file /var/lib/waagent/custom-script/download/0/IPsecEndptDeploy.sh --cl-args ', parameters('singleQuote'),'-k ', reference(parameters('nicNamePrefix')).ipConfigurations[0].properties.privateIpAddress, parameters('commandArgs'), parameters('singleQuote'), ' --signal SCRIPT_DONE \"')]"
+        }
+      }
+    }
+  ],
+
+    "outputs": {
+    }
+  }

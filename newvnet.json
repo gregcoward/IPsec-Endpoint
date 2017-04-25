@@ -16,24 +16,28 @@
     },
     "vnetName": {
       "type": "string",
+      "defaultValue": "VNET",
       "metadata": {
         "description": "Name of the Virtual Network"
       }
     },
     "vnetAddressPrefix": {
       "type": "string",
+      "defaultValue": "10.10.0.0/16",
       "metadata": {
         "description": "Address Prefix for Virtual Network"
       }
     },
     "subnetName": {
       "type": "string",
+      "defaultValue": "external",
       "metadata": {
         "description": "Name of first Subnet"
       }
     },
     "subnetAddressPrefix": {
       "type": "string",
+      "defaultValue": "10.10.1.0/24",
       "metadata": {
         "description": "Address Prefix for first Subnet"
       }
