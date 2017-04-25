@@ -28,7 +28,7 @@ user="admin"
 # download iApp templates
 template_location="/var/lib/waagent/custom-script/download/0"
 
-for template in F5-IPsec-Endpoint.tmpl
+for template in f5.ipsec.endpoint.tmpl
 do
      cp $template_location/$template /config/$template
      response_code=$(curl -sku $user:$(passwd) -w "%{http_code}" -X POST -H "Content-Type: application/json" https://localhost/mgmt/tm/sys/config -d '{"command": "load","name": "merge","options": [ { "file": "/config/'"$template"'" } ] }' -o /dev/null)
