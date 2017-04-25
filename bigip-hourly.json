@@ -218,11 +218,11 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('bigipNamePrefix'),'1','/start')]",
+      "name": "[concat(parameters('bigipNamePrefix'),'/start')]",
       "apiVersion": "[parameters('apiVersionCompute')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', concat(parameters('bigipNamePrefix'),'1'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('bigipNamePrefix'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Azure.Extensions",
