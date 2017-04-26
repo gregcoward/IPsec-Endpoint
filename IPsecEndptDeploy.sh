@@ -5,7 +5,7 @@ function passwd() {
   echo | awk '{print $1}' /config/mypass
 }
 
-while getopts k:i:p:s:e:c:f:y:o:u:t:d: option
+while getopts k:i:p:s:e:c:f:y:o:u:t:d:x: option
 do	case "$option" in
      k) localIP=$OPTARG;;
      i) tunnelType=$OPTARG;;
