@@ -80,7 +80,6 @@
     },
     "publicIPName": {
       "type": "string",
-      "defaultValue": "ip01",
       "metadata": {
         "description": "Unique DNS prefix name for the Public IP used to access the BIG-IP for management access."
       }
